@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . /app
 
-RUN pip install flask flask_login pytz
+RUN pip install -r requirements.txt
 
 EXPOSE 5000
 
