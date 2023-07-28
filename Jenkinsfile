@@ -28,16 +28,16 @@ pipeline {
             steps {
                 script {
                     try {
+                        String dockerLoginCmd
+                        String dockerPushCmd
                         withCredentials([usernamePassword(credentialsId: '8ff899f7-a7c0-4bdc-8bee-7a43a6e06226', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                            environment {
-                                DOCKER_LOGIN_CMD = "echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
-                                DOCKER_PUSH_CMD = "docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION"
-                            }
-                            sh DOCKER_LOGIN_CMD
-                            sh DOCKER_PUSH_CMD
+                            dockerLoginCmd = "echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
+                            dockerPushCmd = "docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION"
+                            sh dockerLoginCmd
+                            sh dockerPushCmd
                         }
                     } catch(Exception e) {
-                        echo "Error in pushing Docker image to Docker Hub: ${e}"
+                        echo "Failed to push Docker image to Docker Hub. Error: ${e}"
                         currentBuild.result = 'FAILURE'
                         error("Stopping the pipeline")
                     }
