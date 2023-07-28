@@ -6,7 +6,7 @@ pipeline {
         DOCKER_HUB_IMG_NAME = 'myapp'
         APP_VERSION = '1.0.0'
         EC2_HOST = '3.135.188.206'
-        EC2_USER = 'ubuntu' // update this according to your actual AMI
+        EC2_USER = 'jenkins' // update this according to your actual AMI
     }
 
     stages {
@@ -48,14 +48,15 @@ pipeline {
             steps {
                 script {
                     try {
-                        withCredentials([sshUserPrivateKey(credentialsId: 'dev-ssh', keyFileVariable: 'SSH_PRIVATE_KEY')]) {
+                        withCredentials([sshUserPrivateKey(credentialsId: 'dev-ssh', keyFileVariable: 'SSH_PRIVATE_KEY'), 
+                                         usernamePassword(credentialsId: 'jenkins-credentials-id', usernameVariable: 'EC2_USER', passwordVariable: 'EC2_PASSWORD')]) {
                             sh """
-                                ssh -v -o StrictHostKeyChecking=no -i ${SSH_PRIVATE_KEY} ${EC2_USER}@${EC2_HOST} "docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
-                                docker stop myapp || true && \
-                                docker rm myapp || true && \
-                                docker rmi ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current || true && \
-                                docker tag ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current && \
-                                docker run -d -p 5000:5000 --name myapp ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current"
+                                ssh -v -o StrictHostKeyChecking=no -i ${SSH_PRIVATE_KEY} ${EC2_USER}@${EC2_HOST} "echo ${EC2_PASSWORD} | sudo -S docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
+                                echo ${EC2_PASSWORD} | sudo -S docker stop myapp || true && \
+                                echo ${EC2_PASSWORD} | sudo -S docker rm myapp || true && \
+                                echo ${EC2_PASSWORD} | sudo -S docker rmi ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current || true && \
+                                echo ${EC2_PASSWORD} | sudo -S docker tag ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current && \
+                                echo ${EC2_PASSWORD} | sudo -S docker run -d -p 5000:5000 --name myapp ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current"
                             """
                         }
                     } catch(Exception e) {
