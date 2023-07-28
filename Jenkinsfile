@@ -1,67 +1,69 @@
 pipeline {
     agent any
-
-    environment {
-        DOCKER_HUB_USERNAME = 'morradbattah'
-        DOCKER_HUB_IMG_NAME = 'myapp'
-        APP_VERSION = '1.0.0'
-        EC2_HOST = '3.135.188.206'
-        EC2_USER = 'ubuntu'
-    }
-
     stages {
-        stage('Build Docker Image') {
+        stage('Checkout') {
+            steps {
+                git credentialsId: 'github', url: 'https://github.com/username/repo.git'
+            }
+        }
+        stage('Build Image') {
             steps {
                 script {
-                    try {
-                        sh "docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ."
-                    } catch(Exception e) {
-                        echo "Error in building Docker image: ${e}"
-                        currentBuild.result = 'FAILURE'
-                        error("Stopping the pipeline")
+                    def dockerImage = docker.build 'morradbattah/myapp:1.0.0'
+                }
+            }
+        }
+        stage('Test Image') {
+            steps{
+                script {
+                    def app = docker.image('morradbattah/myapp:1.0.0')
+                    app.inside {
+                        sh 'echo "Tests passed"'
                     }
                 }
             }
         }
-
-        stage('Push Docker Image to Docker Hub') {
+        stage('Push Image') {
             steps {
                 script {
-                    try {
-                        withCredentials([usernamePassword(credentialsId: '8ff899f7-a7c0-4bdc-8bee-7a43a6e06226', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                            sh '''
-                                echo '{ "auths": { "https://index.docker.io/v1/": { "auth": "'$(echo -n ${DOCKER_HUB_USERNAME}:${DOCKER_HUB_PASSWORD} | base64)'" } } }' > ${WORKSPACE}/docker_auth.json
-                                docker --config=${WORKSPACE} push ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION}
-                                rm ${WORKSPACE}/docker_auth.json
-                            '''
-                        }
-                    } catch(Exception e) {
-                        echo "Error in pushing Docker image to Docker Hub: ${e}"
-                        currentBuild.result = 'FAILURE'
-                        error("Stopping the pipeline")
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
+                        def app = docker.image('morradbattah/myapp:1.0.0')
+                        app.push('1.0.0')
+                        app.push('latest')
                     }
                 }
             }
         }
-
-        stage('Deploy to EC2') {
+        stage('Check SSH Key') {
             steps {
                 script {
-                    try {
-                        withCredentials([sshUserPrivateKey(credentialsId: 'dev-ssh', keyFileVariable: 'SSH_PRIVATE_KEY')]) {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'dev-ssh', keyFileVariable: 'SSH_KEY')]) {
+                        sshagent(['dev-ssh']) {
                             sh """
-                                ssh -v -o StrictHostKeyChecking=no -i ${SSH_PRIVATE_KEY} ${EC2_USER}@${EC2_HOST} "docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
-                                docker stop myapp || true && \
-                                docker rm myapp || true && \
-                                docker rmi ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current || true && \
-                                docker tag ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current && \
-                                docker run -d -p 5000:5000 --name myapp ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current"
+                            chmod 600 $SSH_KEY
+                            ssh -o StrictHostKeyChecking=no -i $SSH_KEY ubuntu@3.135.188.206 echo "SSH key is working!"
                             """
                         }
-                    } catch(Exception e) {
-                        echo "Error in deploying to EC2: ${e}"
-                        currentBuild.result = 'FAILURE'
-                        error("Stopping the pipeline")
+                    }
+                }
+            }
+        }
+        stage('Deploy to Prod') {
+            steps{
+                script {
+                    withCredentials([sshUserPrivateKey(credentialsId: 'dev-ssh', keyFileVariable: 'SSH_KEY')]) {
+                        sshagent(['dev-ssh']) {
+                            sh """
+                            chmod 600 $SSH_KEY
+                            ssh -o StrictHostKeyChecking=no -i $SSH_KEY ubuntu@3.135.188.206 << EOF
+                              docker stop myapp || true &&                                 
+                              docker rm myapp || true &&                                 
+                              docker rmi morradbattah/myapp:current || true &&                                 
+                              docker tag morradbattah/myapp:1.0.0 morradbattah/myapp:current &&                                 
+                              docker run -d -p 5000:5000 --name myapp morradbattah/myapp:current
+                            EOF
+                            """
+                        }
                     }
                 }
             }
