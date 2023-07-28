@@ -48,7 +48,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh', keyFileVariable: 'EC2_PEM_FILE')]) {
+                        withCredentials([sshUserPrivateKey(credentialsId: 'd35dd507-ef9c-42e9-9de9-343dda5b1a84', keyFileVariable: 'EC2_PEM_FILE')]) {
                             sh """
                                 ssh -o StrictHostKeyChecking=no -i ${EC2_PEM_FILE} ${EC2_USER}@${EC2_HOST} "docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
                                 docker stop myapp || true && \
