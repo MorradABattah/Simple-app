@@ -49,7 +49,7 @@ pipeline {
                 script {
                     try {
                         withCredentials([sshUserPrivateKey(credentialsId: 'dev-ssh', keyFileVariable: 'SSH_PRIVATE_KEY'), 
-                                         usernamePassword(credentialsId: 'jenkins-credentials-id', usernameVariable: 'EC2_USER', passwordVariable: 'EC2_PASSWORD')]) {
+                                         usernamePassword(credentialsId: 'jenkins-credential-id', usernameVariable: 'EC2_USER', passwordVariable: 'EC2_PASSWORD')]) {
                             sh """
                                 ssh -v -o StrictHostKeyChecking=no -i ${SSH_PRIVATE_KEY} ${EC2_USER}@${EC2_HOST} "echo ${EC2_PASSWORD} | sudo -S docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
                                 echo ${EC2_PASSWORD} | sudo -S docker stop myapp || true && \
