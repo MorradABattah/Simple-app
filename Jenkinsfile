@@ -46,15 +46,14 @@ pipeline {
                 script {
                     try {
                         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh', keyFileVariable: 'EC2_PEM_FILE')]) {
-                            sshagent(['ec2-ssh']) {
-                                sh """
-                                    ssh -o StrictHostKeyChecking=no -i ${EC2_PEM_FILE} ${EC2_USER}@${EC2_HOST} "docker stop \$(docker ps -q) || true && \
-                                    docker rm \$(docker ps -a -q) || true && \
-                                    docker rmi \$(docker images -q) || true && \
-                                    docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
-                                    docker run -d -p 5000:5000 ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION}"
-                                """
-                            }
+                            sh """
+                                ssh -o StrictHostKeyChecking=no -i ${EC2_PEM_FILE} ${EC2_USER}@${EC2_HOST} "docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
+                                docker stop myapp || true && \
+                                docker rm myapp || true && \
+                                docker rmi ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current || true && \
+                                docker tag ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current && \
+                                docker run -d -p 5000:5000 --name myapp ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current"
+                            """
                         }
                     } catch(Exception e) {
                         echo "Error in deploying to EC2: ${e}"
