@@ -14,7 +14,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'docker build -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION .'
+                        sh "docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ."
                     } catch(Exception e) {
                         echo "Error in building Docker image: ${e}"
                         currentBuild.result = 'FAILURE'
@@ -28,16 +28,15 @@ pipeline {
             steps {
                 script {
                     try {
-                        String dockerLoginCmd
-                        String dockerPushCmd
                         withCredentials([usernamePassword(credentialsId: '8ff899f7-a7c0-4bdc-8bee-7a43a6e06226', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                            dockerLoginCmd = "echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
-                            dockerPushCmd = "docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION"
-                            sh dockerLoginCmd
-                            sh dockerPushCmd
+                            sh '''
+                                echo '{ "auths": { "https://index.docker.io/v1/": { "auth": "'$(echo -n ${DOCKER_HUB_USERNAME}:${DOCKER_HUB_PASSWORD} | base64)'" } } }' > ${WORKSPACE}/docker_auth.json
+                                docker --config=${WORKSPACE} push ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION}
+                                rm ${WORKSPACE}/docker_auth.json
+                            '''
                         }
                     } catch(Exception e) {
-                        echo "Failed to push Docker image to Docker Hub. Error: ${e}"
+                        echo "Error in pushing Docker image to Docker Hub: ${e}"
                         currentBuild.result = 'FAILURE'
                         error("Stopping the pipeline")
                     }
@@ -50,14 +49,14 @@ pipeline {
                 script {
                     try {
                         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh', keyFileVariable: 'EC2_PEM_FILE')]) {
-                            sh '''
-                                ssh -o StrictHostKeyChecking=no -i $EC2_PEM_FILE $EC2_USER@$EC2_HOST "docker pull $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION && \
+                            sh """
+                                ssh -o StrictHostKeyChecking=no -i ${EC2_PEM_FILE} ${EC2_USER}@${EC2_HOST} "docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
                                 docker stop myapp || true && \
                                 docker rm myapp || true && \
-                                docker rmi $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:current || true && \
-                                docker tag $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:current && \
-                                docker run -d -p 5000:5000 --name myapp $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:current"
-                            '''
+                                docker rmi ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current || true && \
+                                docker tag ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current && \
+                                docker run -d -p 5000:5000 --name myapp ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current"
+                            """
                         }
                     } catch(Exception e) {
                         echo "Error in deploying to EC2: ${e}"
