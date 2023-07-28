@@ -16,9 +16,8 @@ pipeline {
                     try {
                         sh "docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ."
                     } catch(Exception e) {
-                        echo "Error in building Docker image: ${e}"
-                        currentBuild.result = 'FAILURE'
-                        error("Stopping the pipeline")
+                        echo "Failed to build Docker image. Error: ${e}"
+                        error("Stopping the pipeline due to failure in building Docker image.")
                     }
                 }
             }
@@ -33,9 +32,8 @@ pipeline {
                             sh "docker push ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION}"
                         }
                     } catch(Exception e) {
-                        echo "Error in pushing Docker image to Docker Hub: ${e}"
-                        currentBuild.result = 'FAILURE'
-                        error("Stopping the pipeline")
+                        echo "Failed to push Docker image to Docker Hub. Error: ${e}"
+                        error("Stopping the pipeline due to failure in pushing Docker image to Docker Hub.")
                     }
                 }
             }
@@ -56,9 +54,8 @@ pipeline {
                             """
                         }
                     } catch(Exception e) {
-                        echo "Error in deploying to EC2: ${e}"
-                        currentBuild.result = 'FAILURE'
-                        error("Stopping the pipeline")
+                        echo "Failed to deploy to EC2. Error: ${e}"
+                        error("Stopping the pipeline due to failure in deploying to EC2.")
                     }
                 }
             }
