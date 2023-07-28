@@ -1,0 +1,14 @@
+{
+    "name": "example-app",
+    "version": "1.0.0",
+    "description": "An example Node.js app",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "dependencies": {
+      "bcrypt": "^5.0.1",
+      "pg": "^8.7.1"
+    }
+  }
+  
