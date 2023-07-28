@@ -14,10 +14,11 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh "docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ."
+                        sh 'docker build -t $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION .'
                     } catch(Exception e) {
-                        echo "Failed to build Docker image. Error: ${e}"
-                        error("Stopping the pipeline due to failure in building Docker image.")
+                        echo "Error in building Docker image: ${e}"
+                        currentBuild.result = 'FAILURE'
+                        error("Stopping the pipeline")
                     }
                 }
             }
@@ -28,12 +29,17 @@ pipeline {
                 script {
                     try {
                         withCredentials([usernamePassword(credentialsId: '8ff899f7-a7c0-4bdc-8bee-7a43a6e06226', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                            sh "echo ${DOCKER_HUB_PASSWORD} | docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
-                            sh "docker push ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION}"
+                            environment {
+                                DOCKER_LOGIN_CMD = "echo $DOCKER_HUB_PASSWORD | docker login -u $DOCKER_HUB_USERNAME --password-stdin"
+                                DOCKER_PUSH_CMD = "docker push $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION"
+                            }
+                            sh DOCKER_LOGIN_CMD
+                            sh DOCKER_PUSH_CMD
                         }
                     } catch(Exception e) {
-                        echo "Failed to push Docker image to Docker Hub. Error: ${e}"
-                        error("Stopping the pipeline due to failure in pushing Docker image to Docker Hub.")
+                        echo "Error in pushing Docker image to Docker Hub: ${e}"
+                        currentBuild.result = 'FAILURE'
+                        error("Stopping the pipeline")
                     }
                 }
             }
@@ -44,18 +50,19 @@ pipeline {
                 script {
                     try {
                         withCredentials([sshUserPrivateKey(credentialsId: 'ec2-ssh', keyFileVariable: 'EC2_PEM_FILE')]) {
-                            sh """
-                                ssh -o StrictHostKeyChecking=no -i ${EC2_PEM_FILE} ${EC2_USER}@${EC2_HOST} "docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
+                            sh '''
+                                ssh -o StrictHostKeyChecking=no -i $EC2_PEM_FILE $EC2_USER@$EC2_HOST "docker pull $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION && \
                                 docker stop myapp || true && \
                                 docker rm myapp || true && \
-                                docker rmi ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current || true && \
-                                docker tag ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current && \
-                                docker run -d -p 5000:5000 --name myapp ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current"
-                            """
+                                docker rmi $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:current || true && \
+                                docker tag $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:$APP_VERSION $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:current && \
+                                docker run -d -p 5000:5000 --name myapp $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMG_NAME:current"
+                            '''
                         }
                     } catch(Exception e) {
-                        echo "Failed to deploy to EC2. Error: ${e}"
-                        error("Stopping the pipeline due to failure in deploying to EC2.")
+                        echo "Error in deploying to EC2: ${e}"
+                        currentBuild.result = 'FAILURE'
+                        error("Stopping the pipeline")
                     }
                 }
             }
