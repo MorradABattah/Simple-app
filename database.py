@@ -7,7 +7,7 @@ def create_conn():
         conn = psycopg2.connect(
             database="jenkins",
             user="jenkins",
-            password="jenkinspassword",
+            password="jenkins",
             host="3.135.188.206", # Update with your PostgreSQL server IP if not localhost
             port="5432",
         )
