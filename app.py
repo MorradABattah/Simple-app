@@ -30,33 +30,39 @@ def home():
 def login():
     error = None
     if request.method == 'POST':
-        username = request.form['username']
-        user = User.query.get(username)
-        if user is None:
-            error = 'Incorrect username.'
-        elif not check_password_hash(user.password, request.form['password']):
-            error = 'Incorrect password.'
-        else:
-            login_user(user)
-            return redirect(url_for('time'))
+        try:
+            username = request.form['username']
+            user = User.query.get(username)
+            if user is None:
+                error = 'Incorrect username.'
+            elif not check_password_hash(user.password, request.form['password']):
+                error = 'Incorrect password.'
+            else:
+                login_user(user)
+                return redirect(url_for('time'))
+        except Exception as e:
+            error = 'Error logging in: {}'.format(e)
     return render_template('login.html', error=error)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     error = None
     if request.method == 'POST':
-        username = request.form['username']
-        password = generate_password_hash(request.form['password'])
+        try:
+            username = request.form['username']
+            password = generate_password_hash(request.form['password'])
 
-        # check if username already exists
-        if User.query.get(username) is not None:
-            error = 'User {} is already registered.'.format(username)
-        else:
-            # store the new user
-            new_user = User(id=username, password=password)
-            db.session.add(new_user)
-            db.session.commit()
-            return "User {} created successfully".format(username)
+            # check if username already exists
+            if User.query.get(username) is not None:
+                error = 'User {} is already registered.'.format(username)
+            else:
+                # store the new user
+                new_user = User(id=username, password=password)
+                db.session.add(new_user)
+                db.session.commit()
+                return "User {} created successfully".format(username)
+        except Exception as e:
+            error = 'Error signing up: {}'.format(e)
     return render_template('signup.html', error=error)
 
 @app.route('/time')
