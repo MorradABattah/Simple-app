@@ -8,7 +8,7 @@ def create_conn():
             database="jenkins",
             user="jenkins",
             password="jenkins",
-            host="3.135.188.206", # Update with your PostgreSQL server IP if not localhost
+            host="3.141.10.82", # Update with your PostgreSQL server IP if not localhost
             port="5432",
         )
         print("Connection to PostgreSQL DB successful")

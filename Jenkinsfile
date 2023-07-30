@@ -5,7 +5,7 @@ pipeline {
         DOCKER_HUB_USERNAME = 'morradbattah'
         DOCKER_HUB_IMG_NAME = 'myapp'
         APP_VERSION = '1.0.0'
-        EC2_HOST = '3.135.188.206'
+        EC2_HOST = '3.141.10.82'
         EC2_USER = 'ubuntu' // update this according to your actual AMI
     }
 
