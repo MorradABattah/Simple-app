@@ -14,7 +14,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-class User(db.Model, UserMixin):
+class User(db.Model, UserMixin): 
     id = db.Column(db.String(100), primary_key=True)
     password = db.Column(db.String(100))
 

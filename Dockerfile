@@ -9,8 +9,9 @@ ADD . /app
 
 # Upgrade pip
 RUN pip install --no-cache-dir -U pip
-# Install Flask, Jinja2, MarkupSafe, itsdangerous, werkzeug, flask_login, pytz, and psycopg2-binary
-RUN pip install --no-cache-dir flask jinja2 markupsafe itsdangerous werkzeug flask_login pytz psycopg2-binary
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Make port 5000 available to the world outside this container
 EXPOSE 5000
