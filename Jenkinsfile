@@ -7,6 +7,8 @@ pipeline {
         APP_VERSION = '1.0.0'
         EC2_HOST = '3.141.10.82'
         EC2_USER = 'ubuntu' // update this according to your actual AMI
+        DB_USER = 'jenkins' // update this with your DB username
+        DB_PASSWORD = 'jenkins' // update this with your DB password
     }
 
     stages {
@@ -55,7 +57,7 @@ pipeline {
                                 docker rm myapp || true && \
                                 docker rmi ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current || true && \
                                 docker tag ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current && \
-                                docker run -d -p 5000:5000 --name myapp ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current"
+                                docker run -d -p 5000:5000 --name myapp --network=host -e DB_USER=${DB_USER} -e DB_PASSWORD=${DB_PASSWORD} -e DB_HOST=${EC2_HOST} ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:current"
                             """
                         }
                     } catch(Exception e) {
