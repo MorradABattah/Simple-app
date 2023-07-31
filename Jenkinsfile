@@ -5,7 +5,7 @@ pipeline {
         DOCKER_HUB_USERNAME = 'morradbattah'
         DOCKER_HUB_IMG_NAME = 'myapp'
         APP_VERSION = '1.0.0'
-        EC2_HOST = '<your-ec2-host>'
+        EC2_HOST = '3.141.10.82'
         EC2_USER = 'ubuntu'
         DB_USER = 'jenkins'
         DB_PASSWORD = 'jenkins'
@@ -50,7 +50,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        withCredentials([usernamePassword(credentialsId: 'ec2-password', usernameVariable: 'EC2_USER', passwordVariable: 'EC2_PASSWORD')]) {
+                        withCredentials([usernamePassword(credentialsId: 'jenkins', usernameVariable: 'EC2_USER', passwordVariable: 'EC2_PASSWORD')]) {
                             sh """
                                 sshpass -p ${EC2_PASSWORD} ssh -v -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} "docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_HUB_IMG_NAME}:${APP_VERSION} && \
                                 docker stop myapp || true && \
