@@ -7,7 +7,7 @@ import pytz
 
 app = Flask(__name__)
 app.secret_key = 'mysecretkey'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://jenkins:jenkins@3.141.10.82/jenkins'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://jenkins:jenkins@<your-ec2-db-host>/jenkins'
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
